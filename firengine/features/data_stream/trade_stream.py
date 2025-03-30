@@ -8,13 +8,13 @@ from firengine.model.trading import Trade
 
 
 class TradeStream(AbstractBaseStream[Trade]):
-    def __init__(self, exchange: Exchange):
-        super().__init__(exchange)
+    # def __init__(self, exchange: Exchange):
+    #     super().__init__(exchange)
 
     async def _generate(self) -> AsyncGenerator[Trade, None, None]:
         while True:
-            trade_dicts = await self._exchange.watch_trades_for_symbols(list(self._symbols))
-            for d in trade_dicts:
+            dicts = await self._exchange.watch_trades_for_symbols(list(self._symbols))
+            for d in dicts:
                 trade = Trade.from_kwargs(**d)
                 yield trade
 

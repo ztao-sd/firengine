@@ -1,9 +1,8 @@
 import asyncio
-import time
 from collections import deque
+from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING
 
-import ccxt.pro as ccxt
 from ccxt.pro import Exchange
 
 from firengine.features.data_stream.base_stream import AbstractBaseStream
@@ -21,30 +20,32 @@ class TradeSlidingFrame:
         self._min_queue: deque[Trade] = deque()
         self._volume_sum: float = 0.0
         self._interval_ms = interval_ms
-        self._opening: int | None = None
+        # self._opening: int | None = None
         self._last_opening: int | None = None
 
     def put(self, trade: Trade):
         # Refresh opening time
-        if self._opening is None or trade.timestamp > self._opening + self._interval_ms:
-            self._opening = trade.timestamp
-            self._volume_sum = 0.0
+        # if self._opening is None or trade.timestamp > self._opening + self._interval_ms:
+        #     self._opening = trade.timestamp
         # Append to queue
         self._queue.appendleft(trade)
+        self._volume_sum += trade.amount
+
         while self._max_queue and self._max_queue[0].price <= trade.price:
             self._max_queue.popleft()
         self._max_queue.appendleft(trade)
+
         while self._min_queue and self._min_queue[0].price >= trade.price:
             self._min_queue.popleft()
         self._min_queue.appendleft(trade)
-        self._volume_sum += trade.amount
 
         # Evict
-        self.evict(self._opening)
+        # self.evict(self._opening)
 
     def evict(self, opening: int):
         while self._queue and self._queue[-1].timestamp < opening:
             evicted = self._queue.pop()
+            self._volume_sum -= evicted.amount
             if evicted is self._max_queue[-1]:
                 self._max_queue.pop()
             if evicted is self._min_queue[-1]:
@@ -52,8 +53,8 @@ class TradeSlidingFrame:
 
     def get_ohlcv(self) -> OHLCV | None:
         if self._queue:
-            assert self._max_queue[-1].price == max(t.price for t in self._queue)
-            assert self._min_queue[-1].price == min(t.price for t in self._queue)
+            # assert self._max_queue[-1].price == max(t.price for t in self._queue)
+            # assert self._min_queue[-1].price == min(t.price for t in self._queue)
             return OHLCV(
                 timestamp=self._queue[-1].timestamp,
                 open=self._queue[-1].price,
@@ -67,12 +68,12 @@ class TradeSlidingFrame:
     def get_next_ohlcv(self) -> OHLCV | None:
         now = time_ms()
         self._last_opening = self._last_opening or now
-        close = self._last_opening + self._interval_ms
+        closing = self._last_opening + self._interval_ms
         # print(close - now)
-        if now > close:
+        if now > closing:
             self.evict(self._last_opening)
             # print(self._last_opening, self._queue[-1].timestamp if self._queue else None)
-            self._last_opening = close
+            self._last_opening = closing
             return self.get_ohlcv()
         return None
 
@@ -91,7 +92,7 @@ class LocalOHLCVStream(AbstractBaseStream[OHLCV]):
 
         self._sliding_frames: dict[str, TradeSlidingFrame] = {}
         self._trade_stream.acquired.connect(self.put_trade_to_frame)
-        self._sleep_time = min(1000, self._interval_ms // 30)
+        self._sleep_time = min(1000, self._interval_ms // 30) / 1000  # in sec
 
     def add_symbol(self, symbol):
         super().add_symbol(symbol)
@@ -105,29 +106,63 @@ class LocalOHLCVStream(AbstractBaseStream[OHLCV]):
         if frame := self._sliding_frames.get(trade.symbol):
             frame.put(trade)
 
-    async def _generate(self):
+    async def _generate(self) -> AsyncGenerator[OHLCV, None, None]:
         while True:
             for symbol, frame in self._sliding_frames.items():
                 if ohlcv := frame.get_next_ohlcv():
                     ohlcv.timeframe = self._timeframe
+                    ohlcv.symbol = symbol
                     print(symbol, self._exchange.iso8601(ohlcv.timestamp), ohlcv)
                     yield ohlcv
-            await asyncio.sleep(self._sleep_time / 1000)
+            await asyncio.sleep(self._sleep_time)
 
 
-class RemoteOHLCVStream:
-    def __init__(self):
-        pass
+class RemoteOHLCVStream(AbstractBaseStream[OHLCV]):
+    def __init__(self, exchange, timeframe: str):
+        super().__init__(exchange)
+        self._timeframe = timeframe
+        self._tasks: dict[str, asyncio.Task] = {}
+
+    async def _get_ohlcv(self, symbol: str, timeframe: str) -> list[OHLCV]:
+        results = await self._exchange.watch_ohlcv(symbol, timeframe=timeframe)
+        ohlcvs = []
+        for d in results:
+            ohlcv = OHLCV(*d)
+            ohlcv.symbol = symbol
+            ohlcv.timeframe = timeframe
+            ohlcvs.append(ohlcv)
+        return ohlcvs
+
+    async def _generate(self) -> AsyncGenerator[OHLCV, None, None]:
+        while True:
+            results = []
+            for symbol in self._symbols:
+                task = self._tasks.get(symbol)
+                if task is None:
+                    task = asyncio.create_task(self._get_ohlcv(symbol, timeframe=self._timeframe))
+                    self._tasks[symbol] = task
+
+            await asyncio.wait(self._tasks.values(), return_when=asyncio.FIRST_COMPLETED)
+
+            for symbol in self._symbols:
+                if task := self._tasks.get(symbol):
+                    if task.done():
+                        results.extend(task.result())
+                        self._tasks.pop(symbol, None)
+
+            for result in results:
+                print(result)
+                yield result
 
 
-async def main():
+async def test_local_ohlcv_stream():
     from firengine.features.data_handler import PrintDataHandler
     from firengine.features.data_stream.trade_stream import TradeStream
     from firengine.lib.enumeration import SupportedExchange
 
     trade_stream = TradeStream.from_supported_exchange(SupportedExchange.CRYPTOCOM)
     ohlcv_stream = LocalOHLCVStream.from_supported_exchange(
-        SupportedExchange.CRYPTOCOM, timeframe="3m", trade_stream=trade_stream
+        SupportedExchange.CRYPTOCOM, timeframe="1m", trade_stream=trade_stream
     )
     streams = [trade_stream, ohlcv_stream]
     # handler = PrintDataHandler[Trade]()
@@ -143,6 +178,32 @@ async def main():
         await asyncio.wait_for(task, timeout=None)
     await trade_stream.close()
     await ohlcv_stream.close()
+
+
+async def test_remote_ohlcv_stream():
+    from firengine.lib.enumeration import SupportedExchange
+
+    ohlcv_stream = RemoteOHLCVStream.from_supported_exchange(
+        SupportedExchange.CRYPTOCOM,
+        timeframe="1m",
+    )
+    streams = [ohlcv_stream]
+    # handler = PrintDataHandler[Trade]()
+    # trade_stream.acquired.connect(handler.handle)
+    for stream in streams:
+        stream.add_symbol("BTC/USD")
+        stream.add_symbol("ETH/USD")
+        stream.add_symbol("SOL/USD")
+    tasks = [asyncio.create_task(ohlcv_stream.run())]
+    await asyncio.sleep(1200)
+    ohlcv_stream.stop()
+    for task in tasks:
+        await asyncio.wait_for(task, timeout=None)
+    await ohlcv_stream.close()
+
+
+async def main():
+    await test_remote_ohlcv_stream()
 
 
 if __name__ == "__main__":

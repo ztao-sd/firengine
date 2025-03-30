@@ -29,3 +29,4 @@ class OHLCV:
     close: float
     volume: float
     timeframe: str | None = None
+    symbol: str | None = None

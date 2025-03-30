@@ -55,8 +55,9 @@ class AbstractBaseStream[T](ABC):
             try:
                 data = await anext(gen)
                 self._data_acquired_signal.emit(data)
-                if signal := self._data_acquired_per_symbol_signal.get(None):  # todo
-                    pass
+                if symbol := getattr(data, "symbol", None):
+                    if signal := self._data_acquired_per_symbol_signal.get(symbol):
+                        signal.emit(data)
             except Exception as err:
                 traceback.print_exc()
                 raise err
