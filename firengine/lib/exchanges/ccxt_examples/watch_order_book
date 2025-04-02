@@ -1,0 +1,27 @@
+import asyncio
+import sys
+from enum import StrEnum
+from pprint import pprint
+
+import ccxt.pro as ccxt
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+
+class Symbol(StrEnum):
+    BTC_USD = "BTC/USDT"
+
+
+async def watch_order_book(symbol: str, ticks: int):
+    exchange = ccxt.kraken()
+
+    for _ in range(ticks):
+        order_book = await exchange.watch_order_book(symbol)
+        pprint(order_book)
+
+    await exchange.close()
+
+
+if __name__ == "__main__":
+    asyncio.run(watch_order_book("BTC/USD", 10))
