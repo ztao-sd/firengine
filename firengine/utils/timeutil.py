@@ -1,8 +1,13 @@
 import time
+from datetime import datetime
 
 
 def time_ms() -> int:
     return time.time_ns() // 1_000_000
+
+
+def dt_to_time_ms(dt: datetime) -> int:
+    return int(dt.timestamp() * 1000)
 
 
 def parse_timeframe_to_ms(timeframe: str) -> int:
@@ -25,3 +30,4 @@ def parse_timeframe_to_ms(timeframe: str) -> int:
     else:
         raise RuntimeError(f"timeframe unit {unit} is not supported")
     return amount * scale * 1000
+

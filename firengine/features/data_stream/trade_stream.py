@@ -4,7 +4,7 @@ from collections.abc import AsyncGenerator
 from ccxt.pro import Exchange
 
 from firengine.features.data_stream.base_stream import AbstractBaseStream
-from firengine.model.trading import Trade
+from firengine.model.data_model import Trade
 
 
 class TradeStream(AbstractBaseStream[Trade]):

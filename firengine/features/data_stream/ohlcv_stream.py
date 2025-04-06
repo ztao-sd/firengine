@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from ccxt.pro import Exchange
 
 from firengine.features.data_stream.base_stream import AbstractBaseStream
-from firengine.model.trading import OHLCV, Trade
+from firengine.model.data_model import OHLCV, Trade
 from firengine.utils.timeutil import parse_timeframe_to_ms, time_ms
 
 if TYPE_CHECKING:
@@ -155,7 +155,7 @@ class RemoteOHLCVStream(AbstractBaseStream[OHLCV]):
                 yield result
 
 
-async def test_local_ohlcv_stream():
+async def demo_local_ohlcv_stream():
     from firengine.features.data_handler import PrintDataHandler
     from firengine.features.data_stream.trade_stream import TradeStream
     from firengine.lib.enumeration import SupportedExchange
@@ -180,7 +180,7 @@ async def test_local_ohlcv_stream():
     await ohlcv_stream.close()
 
 
-async def test_remote_ohlcv_stream():
+async def demo_remote_ohlcv_stream():
     from firengine.lib.enumeration import SupportedExchange
 
     ohlcv_stream = RemoteOHLCVStream.from_supported_exchange(
@@ -203,7 +203,7 @@ async def test_remote_ohlcv_stream():
 
 
 async def main():
-    await test_remote_ohlcv_stream()
+    await demo_remote_ohlcv_stream()
 
 
 if __name__ == "__main__":

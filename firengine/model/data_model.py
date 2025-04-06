@@ -21,6 +21,14 @@ class Trade(FromDictMixin):
 
 
 @dataclass
+class TradeAbridged:
+    timestamp: int
+    price: float
+    amount: float
+    symbol: str | None = None
+
+
+@dataclass
 class OHLCV:
     timestamp: int
     open: float
@@ -30,3 +38,25 @@ class OHLCV:
     volume: float
     timeframe: str | None = None
     symbol: str | None = None
+
+
+@dataclass
+class OHLCVT:
+    timestamp: int
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: float
+    trades: int
+    timeframe: str | None = None
+    symbol: str | None = None
+
+@dataclass
+class OrderBook(FromDictMixin):
+    bids: list[list[float]]
+    asks: list[list[float]]
+    symbol: str
+    timestamp: int
+    datetime: str
+    nonce: int

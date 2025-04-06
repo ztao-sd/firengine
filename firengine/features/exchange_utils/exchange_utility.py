@@ -52,6 +52,8 @@ class ExchangeUtility:
 
 
 if __name__ == "__main__":
+    ex = ccxt.kraken()
+    ex.fetch_trades()
     exchanges = ExchangeUtility.get_supported_exchanges()
     # print(exchanges)
     exchange_util = ExchangeUtility.from_supported_exchange(SupportedExchange.CRYPTOCOM)
