@@ -53,27 +53,32 @@ def merge_ohlcvt_trades_for_symbols(
     timeframe: str,
     start_ms: int | None = None,
     end_ms: int | None = None,
+    exclude_trade: bool = False,
 ) -> pl.DataFrame:
     ohlcvt_csvfiles = {symbol: get_ohlcvt_csvfile(symbol, timeframe) for symbol in symbols}
     trades_csvfiles = {symbol: get_trade_csvfile(symbol) for symbol in symbols}
 
-    start_ms = start_ms // 1000 or float("-inf")
-    end_ms = end_ms // 1000 or float("inf")
+    start_ms = start_ms or float("-inf")
+    end_ms = end_ms or float("inf")
     ohlcvts = [
         pl.scan_csv(file, has_header=False, new_columns=OHLCVT_COLUMNS)
+        .with_columns((pl.col("timestamp") * 1000).cast(pl.Int64), symbol=pl.lit(symbol))
         .filter(pl.col("timestamp").is_between(start_ms, end_ms))
-        .with_columns(symbol=pl.lit(symbol))
         for symbol, file in ohlcvt_csvfiles.items()
     ]
-    trades = [
-        pl.scan_csv(file, has_header=False, new_columns=TRADES_COLUMNS)
-        .filter(pl.col("timestamp").is_between(start_ms, end_ms))
-        .with_columns(symbol=pl.lit(symbol))
-        for symbol, file in trades_csvfiles.items()
-    ]
     ohlcvt = pl.concat(ohlcvts, how="vertical")
-    trade = pl.concat(trades, how="vertical")
-    return ohlcvt.join(trade, on=["timestamp", "symbol"], how="full", coalesce=True).sort("timestamp").collect()
+
+    if exclude_trade:
+        return ohlcvt.sort("timestamp").with_columns(price=pl.lit(None), amount=pl.lit(None)).collect()
+    else:
+        trades = [
+            pl.scan_csv(file, has_header=False, new_columns=TRADES_COLUMNS)
+            .with_columns((pl.col("timestamp") * 1000).cast(pl.Int64), symbol=pl.lit(symbol))
+            .filter(pl.col("timestamp").is_between(start_ms, end_ms))
+            for symbol, file in trades_csvfiles.items()
+        ]
+        trade = pl.concat(trades, how="vertical")
+        return ohlcvt.join(trade, on=["timestamp", "symbol"], how="full", coalesce=True).sort("timestamp").collect()
 
 
 if __name__ == "__main__":

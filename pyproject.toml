@@ -8,6 +8,7 @@ dependencies = [
     "ccxt>=4.4.65",
     "fastapi[standard]>=0.115.7",
     "ibis-framework[clickhouse,duckdb,polars]>=10.4.0",
+    "keyring>=25.6.0",
     "kubernetes>=32.0.0",
     "orjson>=3.10.16",
     "plotly>=6.0.1",

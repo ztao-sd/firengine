@@ -1,13 +1,11 @@
 import asyncio
 from collections.abc import AsyncGenerator
 
-from ccxt.pro import Exchange
-
-from firengine.features.data_stream.base_stream import AbstractBaseStream
+from firengine.features.streaming.base_stream import BaseExchangeStream
 from firengine.model.data_model import Trade
 
 
-class TradeStream(AbstractBaseStream[Trade]):
+class TradeStream(BaseExchangeStream[Trade]):
     # def __init__(self, exchange: Exchange):
     #     super().__init__(exchange)
 

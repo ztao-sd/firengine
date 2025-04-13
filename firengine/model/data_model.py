@@ -10,14 +10,14 @@ class FromDictMixin:
 
 @dataclass
 class Trade(FromDictMixin):
-    id: int
     timestamp: int  # ms
-    symbol: str
-    side: str
-    type: str
     price: float
     amount: float
-    cost: float
+    symbol: str | None = None
+    id: int | None = None
+    side: str | None = None
+    type: str | None = None
+    cost: float | None = None
 
 
 @dataclass
@@ -36,21 +36,10 @@ class OHLCV:
     low: float
     close: float
     volume: float
-    timeframe: str | None = None
+    trades: int | None = None
     symbol: str | None = None
-
-
-@dataclass
-class OHLCVT:
-    timestamp: int
-    open: float
-    high: float
-    low: float
-    close: float
-    volume: float
-    trades: int
     timeframe: str | None = None
-    symbol: str | None = None
+
 
 @dataclass
 class OrderBook(FromDictMixin):
@@ -60,3 +49,20 @@ class OrderBook(FromDictMixin):
     timestamp: int
     datetime: str
     nonce: int
+
+@dataclass
+class PrivateTrade:
+    id: str
+    timestamp: int
+    datetime: str
+    symbol: str
+    type: str
+    side: str
+    takerOrMaker: str
+    price: float
+    amount: float
+    cost: float
+
+@dataclass
+class Order:
+    pass

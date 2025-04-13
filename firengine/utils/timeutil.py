@@ -1,5 +1,5 @@
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 def time_ms() -> int:
@@ -31,3 +31,5 @@ def parse_timeframe_to_ms(timeframe: str) -> int:
         raise RuntimeError(f"timeframe unit {unit} is not supported")
     return amount * scale * 1000
 
+def past_timestamp_ms(weeks: float = 0.0, days: float = 0.0, hours: float = 0.0, minutes: float = 0.0):
+    return int((datetime.now() - timedelta(weeks=weeks, days=days, hours=hours, minutes=minutes)).timestamp() * 1000)

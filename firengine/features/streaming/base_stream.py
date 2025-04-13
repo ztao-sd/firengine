@@ -13,8 +13,7 @@ from firengine.lib.enumeration import SupportedExchange
 class AbstractBaseStream[T](ABC):
     """Data Producer"""
 
-    def __init__(self, exchange: Exchange, *args, **kwargs):
-        self._exchange = exchange
+    def __init__(self, *args, **kwargs):
         self._symbols: set[str] = set()
         self._data_acquired_signal = Signal[T]()
         self._data_acquired_per_symbol_signal: dict[str, Signal[T]] = {}
@@ -29,13 +28,6 @@ class AbstractBaseStream[T](ABC):
     def acquired_per_symbol(self, symbol: str) -> Signal[T]:
         return self._data_acquired_per_symbol_signal[symbol]
 
-    @classmethod
-    def from_supported_exchange(cls, supp_ex: SupportedExchange, *args, **kwargs) -> Self | None:
-        f = getattr(ccxt, supp_ex.value, None)
-        if callable(f):
-            return cls(f({"newUpdates": True}), *args, **kwargs)
-        return None
-
     def add_symbol(self, symbol: str):
         self._symbols.add(symbol)
         self._data_acquired_per_symbol_signal[symbol] = Signal[T]()
@@ -45,7 +37,7 @@ class AbstractBaseStream[T](ABC):
         self._data_acquired_per_symbol_signal.pop(symbol, None)
 
     @abstractmethod
-    async def _generate(self) -> AsyncGenerator[T, None, None]:
+    async def _generate(self) -> AsyncGenerator[T]:
         raise NotImplementedError
 
     async def run(self):
@@ -64,6 +56,22 @@ class AbstractBaseStream[T](ABC):
 
     def stop(self):
         self._streaming = False
+
+
+class BaseExchangeStream[T](AbstractBaseStream[T]):
+    def __init__(self, exchange: Exchange, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._exchange = exchange
+
+    @classmethod
+    def from_supported_exchange(cls, supp_ex: SupportedExchange, *args, **kwargs) -> Self | None:
+        f = getattr(ccxt, supp_ex.value, None)
+        if callable(f):
+            return cls(f({"newUpdates": True}), *args, **kwargs)
+        return None
+
+    async def _generate(self) -> AsyncGenerator[T, None, None]:
+        raise NotImplementedError
 
     async def close(self):
         await self._exchange.close()

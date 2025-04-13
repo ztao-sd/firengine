@@ -1,12 +1,12 @@
 import asyncio
 from collections.abc import AsyncGenerator
 
-from firengine.features.data_stream.base_stream import AbstractBaseStream
+from firengine.features.streaming.base_stream import BaseExchangeStream
 from firengine.lib.enumeration import SupportedExchange
 from firengine.model.data_model import OrderBook
 
 
-class OrderBookStream(AbstractBaseStream[OrderBook]):
+class OrderBookStream(BaseExchangeStream[OrderBook]):
 
     async def _generate(self) -> AsyncGenerator[OrderBook, None, None]:
         while True:
