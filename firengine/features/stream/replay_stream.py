@@ -2,7 +2,7 @@ import asyncio
 from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING
 
-from firengine.features.streaming.base_stream import AbstractBaseStream
+from firengine.features.stream.base_stream import AbstractBaseStream
 from firengine.model.data_model import OHLCV, Trade
 from firengine.utils.timeutil import past_timestamp_ms
 

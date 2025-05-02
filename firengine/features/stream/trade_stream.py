@@ -1,7 +1,7 @@
 import asyncio
 from collections.abc import AsyncGenerator
 
-from firengine.features.streaming.base_stream import BaseExchangeStream
+from firengine.features.stream.base_stream import BaseExchangeStream
 from firengine.model.data_model import Trade
 
 
@@ -22,7 +22,7 @@ async def main():
     from firengine.lib.enumeration import SupportedExchange
 
     handler = PrintDataHandler[Trade]()
-    stream = TradeStream.from_supported_exchange(SupportedExchange.CRYPTOCOM)
+    stream = TradeStream.from_supported_exchange(SupportedExchange.cryptocom)
     stream.acquired.connect(handler.handle)
     stream.add_symbol("BTC/USD")
     stream.add_symbol("ETH/USD")

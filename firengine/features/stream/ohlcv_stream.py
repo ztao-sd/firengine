@@ -5,12 +5,12 @@ from typing import TYPE_CHECKING
 
 from ccxt.pro import Exchange
 
-from firengine.features.streaming.base_stream import BaseExchangeStream
+from firengine.features.stream.base_stream import BaseExchangeStream
 from firengine.model.data_model import OHLCV, Trade
 from firengine.utils.timeutil import parse_timeframe_to_ms, time_ms
 
 if TYPE_CHECKING:
-    from firengine.features.streaming.trade_stream import TradeStream
+    from firengine.features.stream.trade_stream import TradeStream
 
 
 class TradeSlidingFrame:
@@ -157,12 +157,12 @@ class RemoteOHLCVStream(BaseExchangeStream[OHLCV]):
 
 async def demo_local_ohlcv_stream():
     from firengine.features.data_handler import PrintDataHandler
-    from firengine.features.streaming.trade_stream import TradeStream
+    from firengine.features.stream.trade_stream import TradeStream
     from firengine.lib.enumeration import SupportedExchange
 
-    trade_stream = TradeStream.from_supported_exchange(SupportedExchange.CRYPTOCOM)
+    trade_stream = TradeStream.from_supported_exchange(SupportedExchange.cryptocom)
     ohlcv_stream = LocalOHLCVStream.from_supported_exchange(
-        SupportedExchange.CRYPTOCOM, timeframe="1m", trade_stream=trade_stream
+        SupportedExchange.cryptocom, timeframe="1m", trade_stream=trade_stream
     )
     streams = [trade_stream, ohlcv_stream]
     # handler = PrintDataHandler[Trade]()
@@ -184,7 +184,7 @@ async def demo_remote_ohlcv_stream():
     from firengine.lib.enumeration import SupportedExchange
 
     ohlcv_stream = RemoteOHLCVStream.from_supported_exchange(
-        SupportedExchange.CRYPTOCOM,
+        SupportedExchange.cryptocom,
         timeframe="1m",
     )
     streams = [ohlcv_stream]

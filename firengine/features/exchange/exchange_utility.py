@@ -6,6 +6,7 @@ import ccxt
 from ccxt import Exchange
 
 from firengine.lib.enumeration import SupportedExchange
+from firengine.model.data_model import Ticker
 
 
 class ExchangeUtility:
@@ -50,13 +51,16 @@ class ExchangeUtility:
     def fetch_ohlcv(self, symbol: str):
         return self._exchange.fetch_ohlcv(symbol, limit=30)
 
+    def fetch_ticker(self, symbol: str):
+        d = self._exchange.fetch_ticker(symbol)
+        return Ticker.from_kwargs(**d)
 
 if __name__ == "__main__":
     ex = ccxt.kraken()
     ex.fetch_trades()
     exchanges = ExchangeUtility.get_supported_exchanges()
     # print(exchanges)
-    exchange_util = ExchangeUtility.from_supported_exchange(SupportedExchange.CRYPTOCOM)
+    exchange_util = ExchangeUtility.from_supported_exchange(SupportedExchange.cryptocom)
     # print(exchange_util)
     methods = exchange_util.get_supported_methods()
     pprint(methods)

@@ -1,7 +1,7 @@
 import asyncio
 from collections.abc import AsyncGenerator
 
-from firengine.features.streaming.base_stream import BaseExchangeStream
+from firengine.features.stream.base_stream import BaseExchangeStream
 from firengine.lib.enumeration import SupportedExchange
 from firengine.model.data_model import OrderBook
 
@@ -16,7 +16,7 @@ class OrderBookStream(BaseExchangeStream[OrderBook]):
 
 
 async def demo_order_book_stream():
-    ob_stream = OrderBookStream.from_supported_exchange(SupportedExchange.CRYPTOCOM)
+    ob_stream = OrderBookStream.from_supported_exchange(SupportedExchange.cryptocom)
     ob_stream.add_symbol("BTC/USD")
     ob_stream.add_symbol("ETH/USD")
     ob_stream.add_symbol("SOL/USD")

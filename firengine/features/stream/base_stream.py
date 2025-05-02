@@ -1,7 +1,8 @@
+import asyncio
 import traceback
 from abc import ABC, abstractmethod
-from collections.abc import AsyncGenerator
-from typing import Self
+from collections.abc import AsyncGenerator, Awaitable, Callable, Collection
+from typing import Any, Self
 
 import ccxt.pro as ccxt
 from ccxt.pro import Exchange
@@ -37,7 +38,7 @@ class AbstractBaseStream[T](ABC):
         self._data_acquired_per_symbol_signal.pop(symbol, None)
 
     @abstractmethod
-    async def _generate(self) -> AsyncGenerator[T]:
+    async def _generate(self) -> AsyncGenerator[T | None]:
         raise NotImplementedError
 
     async def run(self):
@@ -45,17 +46,38 @@ class AbstractBaseStream[T](ABC):
         gen = self._generate()
         while self._streaming:
             try:
-                data = await anext(gen)
-                self._data_acquired_signal.emit(data)
-                if symbol := getattr(data, "symbol", None):
-                    if signal := self._data_acquired_per_symbol_signal.get(symbol):
-                        signal.emit(data)
+                if data := await anext(gen):
+                    self._data_acquired_signal.emit(data)
+                    if symbol := getattr(data, "symbol", None):
+                        if signal := self._data_acquired_per_symbol_signal.get(symbol):
+                            signal.emit(data)
             except Exception as err:
                 traceback.print_exc()
                 raise err
 
     def stop(self):
         self._streaming = False
+
+    @staticmethod
+    async def _multi_symbol_handler(
+        symbols: Collection[str], tasks: dict[str, asyncio.Task], func: Callable[[..., Any], Awaitable], *args, **kwargs
+    ) -> list[Any]:
+        results = []
+        for symbol in symbols:
+            task = tasks.get(symbol)
+            if task is None:
+                task = asyncio.create_task(func(symbol, *args, **kwargs))
+                tasks[symbol] = task
+
+        if tasks:
+            await asyncio.wait(tasks.values(), return_when=asyncio.FIRST_COMPLETED, timeout=5.0)
+
+        for symbol in symbols:
+            if task := tasks.get(symbol):
+                if task.done():
+                    results.extend(task.result())
+                    tasks.pop(symbol, None)
+        return results
 
 
 class BaseExchangeStream[T](AbstractBaseStream[T]):
@@ -64,13 +86,22 @@ class BaseExchangeStream[T](AbstractBaseStream[T]):
         self._exchange = exchange
 
     @classmethod
-    def from_supported_exchange(cls, supp_ex: SupportedExchange, *args, **kwargs) -> Self | None:
+    def from_supported_exchange(
+        cls,
+        supp_ex: SupportedExchange,
+        *args,
+        demo: bool = False,
+        **kwargs,
+    ) -> Self | None:
         f = getattr(ccxt, supp_ex.value, None)
+        ex = f({"newUpdates": True})
+        if demo:
+            ex.enable_demo_trading(True)
         if callable(f):
-            return cls(f({"newUpdates": True}), *args, **kwargs)
+            return cls(ex, *args, **kwargs)
         return None
 
-    async def _generate(self) -> AsyncGenerator[T, None, None]:
+    async def _generate(self) -> AsyncGenerator[T | None]:
         raise NotImplementedError
 
     async def close(self):
