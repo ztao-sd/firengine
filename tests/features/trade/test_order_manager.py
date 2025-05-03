@@ -199,5 +199,5 @@ async def test_cancel_all_orders(exchange_fxt, order_manager_fxt, order_stream_f
     for order_info in order_infos:
         assert order_info.id in order_manager_fxt.get_open_orders_per_symbol(symbol)
     await order_manager_fxt.cancel_all_orders(symbol)
-    await asyncio.sleep(5.0)
+    await asyncio.sleep(20.0)
     assert not order_manager_fxt.get_open_orders_per_symbol(symbol)

@@ -1,120 +1,116 @@
-import uuid
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Self
 from collections import defaultdict
+from copy import copy
+from typing import TYPE_CHECKING
 
-from firengine.model.data_model import Order, OrderInfo
+import shortuuid
+
+from firengine.model.data_model import OTOCO, Order
 
 if TYPE_CHECKING:
     from firengine.features.trade.order_manager import OrderManager
 
 
-@dataclass
-class OTOCO:
-    limit_order_info: OrderInfo
-    tp_order_info: OrderInfo
-    sl_order_info: OrderInfo
-    id: str = field(default_factory=lambda: str(uuid.uuid1()))
-    limit_order: Order | None = None
-    tp_order: Order | None = None
-    sl_order: Order | None = None
-
-    @classmethod
-    def new_order(
-        cls,
-        symbol: str,
-        side: str,
-        amount: float,
-        price: float,
-        tp_trigger_price: float,
-        tp_price: float,
-        sl_trigger_price: float,
-        sl_price: float,
-        time_in_force=None,
-        expired_dt=None,
-    ) -> Self:
-        limit_order = OrderInfo(
-            symbol=symbol,
-            type="limit",
-            side=side,
-            amount=amount,
-            price=price,
-        )
-        tp_order = OrderInfo(
-            symbol=symbol,
-            type="limit",
-            side=side,
-            amount=amount,
-            price=tp_price,
-            triggerPrice=tp_trigger_price,
-        )
-        sl_order = OrderInfo(
-            symbol=symbol,
-            type="limit",
-            side=side,
-            amount=amount,
-            price=sl_price,
-            triggerPrice=sl_trigger_price,
-        )
-        return cls(limit_order, tp_order, sl_order)
-
-    @property
-    def status(self):
-        return
-
 class OTOCOManager:
     def __init__(self, order_manager: "OrderManager"):
         self._order_manager = order_manager
-        self._otocos: dict[str, OTOCO] = {}
-        self._otoco_aliases: dict[str, str] = {}
-        self._otocos_per_symbol: defaultdict[str, list[OTOCO]] = defaultdict(list)
+        self._otocos_per_symbol: defaultdict[str, dict[str, OTOCO]] = defaultdict(dict)
+        self._otocos_per_order: dict[str, OTOCO] = {}
 
-    def create_new_otoco(
+    async def create_otoco(
         self,
         symbol: str,
         side: str,
         amount: float,
         price: float,
-        tp_trigger_price: float,
         tp_price: float,
-        sl_trigger_price: float,
         sl_price: float,
-    ):
-        otoco = OTOCO.new_order(
-            symbol, side, amount, price, tp_trigger_price, tp_price, sl_trigger_price, sl_trigger_price, sl_price
+    ) -> OTOCO:
+        otoco = OTOCO(
+            id=shortuuid.uuid(),
+            symbol=symbol,
+            side=side,
+            amount=amount,
+            price=price,
+            tp_price=tp_price,
+            sl_price=sl_price,
         )
-        self._otocos[otoco.id] = otoco
-        self._otocos_per_symbol[symbol].append(otoco)
+        self._otocos_per_symbol[symbol][otoco.id] = otoco
+        order_info = await self._order_manager.submit_order(symbol, "limit", side, amount, price)
+        otoco.order_id = order_info.id
+        self._otocos_per_order[order_info.id] = otoco
+        return otoco
 
-    async def submit_limit_order(self, otoco_id: str):
-        if otoco := self._otocos.get(otoco_id):
-            if otoco.limit_order is None:
-                otoco.limit_order = await self._order_manager.submit_order(
-                    otoco.limit_order_info.symbol,
-                    otoco.limit_order_info.type,
-                    otoco.limit_order_info.side,
-                    otoco.limit_order_info.amount,
-                    otoco.limit_order_info.price,
-                )
+    async def modify_otoco(self, target: OTOCO):
+        # Check if order is filled
+        if otoco := self._otocos_per_symbol[target.symbol].get(target.id):
+            if order := copy(self._order_manager.get_open_order(target.symbol, target.order_id)):
+                order.amount = target.amount
+                order.price = target.price
+                # otoco.price = target.price
+                # otoco.amount = target.amount
+                await self._order_manager.modify_order(order)
+            elif self._order_manager.get_closed_order(target.symbol, target.order_id):
+                if order := copy(self._order_manager.get_open_order(target.symbol, target.tp_order_id)):
+                    order.price = target.tp_price
+                    # otoco.tp_price = target.tp_price
+                    await self._order_manager.modify_order(order)
+                if order := copy(self._order_manager.get_open_order(target.symbol, target.sl_order_id)):
+                    order.price = target.sl_price
+                    # otoco.sl_price = target.sl_price
+                    await self._order_manager.modify_order(order)
 
-    def cancel_otoco(self, otoco_id: str):
-        if otoco := self._otocos.get(otoco_id):
-            if otoco.limit_order:
-                pass
-            if otoco.tp_order:
-                pass
-            if otoco.sl_order:
-                pass
+    async def cancel_otoco_limit(self, target: OTOCO):
+        if target.id in self._otocos_per_symbol[target.symbol]:
+            if order := self._order_manager.get_open_order(target.symbol, target.order_id):
+                await self._order_manager.cancel_order(order.id, order.symbol)
 
-    def on_limit_order_filled(self, limit_order_id: str):
-        pass
+    async def cancel_otoco_tp(self, target: OTOCO):
+        if target.id in self._otocos_per_symbol[target.symbol]:
+            if order := self._order_manager.get_open_order(target.symbol, target.tp_order_id):
+                await self._order_manager.cancel_order(order.id, order.symbol)
 
-    def on_tp_order_filled(self, tp_order_id: str):
-        pass
+    async def cancel_otoco_sl(self, target: OTOCO):
+        if target.id in self._otocos_per_symbol[target.symbol]:
+            if order := self._order_manager.get_open_order(target.symbol, target.sl_order_id):
+                await self._order_manager.cancel_order(order.id, order.symbol)
 
-    def on_sl_order_filled(self, sl_order_id: str):
-        pass
-
-    def get_otocos_per_symbol(self, symbol: str):
-        pass
-
+    async def on_order_updated(self, order: Order):
+        if otoco := self._otocos_per_order[order.id]:
+            if order.id == otoco.order_id:
+                otoco.price = order.price
+                otoco.amount = order.amount
+                match order.status:
+                    case "open":
+                        pass
+                    case "closed":
+                        side = "buy" if otoco.side == "sell" else "sell"
+                        if otoco.sl_order_id is None:
+                            order_info = await self._order_manager.submit_order(
+                                otoco.symbol, "limit", side, otoco.amount, otoco.sl_price
+                            )
+                            otoco.sl_order_id = order_info.id
+                        if otoco.tp_order_id is None:
+                            order_info = await self._order_manager.submit_order(
+                                otoco.symbol, "limit", side, otoco.amount, otoco.tp_price
+                            )
+                            otoco.tp_order_id = order_info.id
+                    case _:
+                        otoco.order_id = None
+            elif order.id == otoco.tp_order_id:
+                otoco.tp_price = order.price
+                match order.status:
+                    case "open":
+                        pass
+                    case "closed":
+                        pass
+                    case _:
+                        otoco.tp_order_id = None
+            elif order.id == otoco.sl_order_id:
+                otoco.sl_price = order.price
+                match order.status:
+                    case "open":
+                        pass
+                    case "closed":
+                        pass
+                    case _:
+                        otoco.sl_order_id = None

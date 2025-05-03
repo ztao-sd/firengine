@@ -7,7 +7,7 @@ from typing import Any, Self
 import ccxt.pro as ccxt
 from ccxt.pro import Exchange
 
-from firengine.lib.com.signal import Signal
+from firengine.lib.com.signal import AsyncSignal
 from firengine.lib.enumeration import SupportedExchange
 
 
@@ -16,26 +16,26 @@ class AbstractBaseStream[T](ABC):
 
     def __init__(self, *args, **kwargs):
         self._symbols: set[str] = set()
-        self._data_acquired_signal = Signal[T]()
-        self._data_acquired_per_symbol_signal: dict[str, Signal[T]] = {}
+        self._data_acquired_signal = AsyncSignal[T]()
+        self._data_acquired_per_symbol_signal: dict[str, AsyncSignal[T]] = {}
         self._streaming = False
         self._args = args
         self._kwargs = kwargs
 
     @property
-    def acquired(self) -> Signal[T]:
+    def acquired(self) -> AsyncSignal[T]:
         return self._data_acquired_signal
 
     @property
     def symbols(self) -> set[str]:
         return self._symbols
 
-    def acquired_per_symbol(self, symbol: str) -> Signal[T]:
+    def acquired_per_symbol(self, symbol: str) -> AsyncSignal[T]:
         return self._data_acquired_per_symbol_signal[symbol]
 
     def add_symbol(self, symbol: str):
         self._symbols.add(symbol)
-        self._data_acquired_per_symbol_signal[symbol] = Signal[T]()
+        self._data_acquired_per_symbol_signal[symbol] = AsyncSignal[T]()
 
     def remove_symbol(self, symbol: str):
         self._symbols.discard(symbol)
@@ -51,10 +51,10 @@ class AbstractBaseStream[T](ABC):
         while self._streaming:
             try:
                 if data := await anext(gen):
-                    self._data_acquired_signal.emit(data)
+                    await self._data_acquired_signal.emit(data)
                     if symbol := getattr(data, "symbol", None):
                         if signal := self._data_acquired_per_symbol_signal.get(symbol):
-                            signal.emit(data)
+                            await signal.emit(data)
             except Exception as err:
                 traceback.print_exc()
                 raise err

@@ -102,7 +102,7 @@ class LocalOHLCVStream(BaseExchangeStream[OHLCV]):
         super().remove_symbol(symbol)
         self._sliding_frames.pop(symbol, None)
 
-    def put_trade_to_frame(self, trade: Trade):
+    async def put_trade_to_frame(self, trade: Trade):
         if frame := self._sliding_frames.get(trade.symbol):
             frame.put(trade)
 

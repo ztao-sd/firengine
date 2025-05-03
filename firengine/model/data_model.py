@@ -126,3 +126,17 @@ class OrderInfo(FromDictMixin):
     triggerPrice: float | None = None
     timeInForce: str = "GTC"
     status: OrderStatus = OrderStatus.pending
+
+
+@dataclass
+class OTOCO(FromDictMixin):
+    id: str
+    symbol: str
+    side: str
+    amount: float
+    price: float
+    tp_price: float
+    sl_price: float
+    order_id: str | None = None
+    tp_order_id: str | None = None
+    sl_order_id: str | None = None
