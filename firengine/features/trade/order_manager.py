@@ -25,11 +25,20 @@ class OrderManager:
     def symbols(self) -> set[str]:
         return self._symbols
 
+    def get_open_order(self, symbol: str, order_id: str) -> Order | None:
+        return self._open_orders[symbol].get(order_id)
+
+    def get_closed_order(self, symbol: str, order_id: str) -> Order | None:
+        return self._closed_orders[symbol].get(order_id)
+
     def get_open_orders_per_symbol(self, symbol: str) -> dict[str, Order]:
         return self._open_orders[symbol]
 
     def get_closed_orders_per_symbol(self, symbol: str) -> dict[str, Order]:
         return self._closed_orders[symbol]
+
+    def get_trades_per_order(self, order_id: str) -> dict[str, PrivateTrade]:
+        return self._trades_per_order[order_id]
 
     def on_order_updated(self, order: Order):
         match order.status:

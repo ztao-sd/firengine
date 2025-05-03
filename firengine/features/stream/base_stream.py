@@ -26,6 +26,10 @@ class AbstractBaseStream[T](ABC):
     def acquired(self) -> Signal[T]:
         return self._data_acquired_signal
 
+    @property
+    def symbols(self) -> set[str]:
+        return self._symbols
+
     def acquired_per_symbol(self, symbol: str) -> Signal[T]:
         return self._data_acquired_per_symbol_signal[symbol]
 

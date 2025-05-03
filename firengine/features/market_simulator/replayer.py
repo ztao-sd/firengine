@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from firengine.features.market_replay.dataset_utils import (
+from firengine.features.market_simulator.dataset_utils import (
     merge_ohlcvt_trades_for_symbols,
 )
 from firengine.model.data_model import OHLCV, Trade

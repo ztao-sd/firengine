@@ -7,7 +7,7 @@ from firengine.model.data_model import OHLCV, Trade
 from firengine.utils.timeutil import past_timestamp_ms
 
 if TYPE_CHECKING:
-    from firengine.features.market_replay.replayer import MarketReplayer
+    from firengine.features.market_simulator.replayer import MarketReplayer
 
 
 SupportDataType = OHLCV | Trade
@@ -33,7 +33,7 @@ class OHLCVReplayStream(AbstractBaseStream[OHLCV]):
 
 
 async def main():
-    from firengine.features.market_replay.replayer import MarketReplayer, TimeSeriesMarketData
+    from firengine.features.market_simulator.replayer import MarketReplayer, TimeSeriesMarketData
 
     symbols = ["XBTUSD"]
     start = past_timestamp_ms(days=190)
