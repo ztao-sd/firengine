@@ -55,6 +55,20 @@ wheels = [
 ]
 
 [[package]]
+name = "aioreactive"
+version = "0.20.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "expression" },
+    { name = "reactivex" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ba/f1/b191aa532f0724b0803f5b978cafd85a23b6d81899d2c2884ad2fd8d08e4/aioreactive-0.20.0.tar.gz", hash = "sha256:2da08e5a7a722350fab082ee1426720b4e650adbcac4ff3839e29e676741d70d", size = 35512 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/61/a4/1c509efdaf51a29cc4bc74d0c0b6eff8f812f38721486c9bdfad465729bd/aioreactive-0.20.0-py3-none-any.whl", hash = "sha256:8887a6cd5ff8494a953b580e22940dc52d265b2555f4c652afefb14d21ac64f9", size = 39739 },
+]
+
+[[package]]
 name = "aiosignal"
 version = "1.3.2"
 source = { registry = "https://pypi.org/simple" }
@@ -327,6 +341,18 @@ wheels = [
 ]
 
 [[package]]
+name = "expression"
+version = "5.6.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/43/c7/bb061623b5815566bda69f5e9d156e38a97ebb383b8db3d2dedb26415466/expression-5.6.0.tar.gz", hash = "sha256:454f6fe138347194a43c7f878d958efe9b84b9cc770e462010c7a52e18058065", size = 59147 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6b/a2/656b8bebe495117342a8676ccabf52b3885ce11a856c8dfe1fbbdc250d2d/expression-5.6.0-py3-none-any.whl", hash = "sha256:f5c62e38186c9287e088dee9cf3939b0bbde21cb4c59571872154a53d33dd7c0", size = 69673 },
+]
+
+[[package]]
 name = "fastapi"
 version = "0.115.7"
 source = { registry = "https://pypi.org/simple" }
@@ -374,6 +400,7 @@ name = "firengine"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "aioreactive" },
     { name = "ccxt" },
     { name = "fastapi", extra = ["standard"] },
     { name = "ibis-framework", extra = ["clickhouse", "duckdb", "polars"] },
@@ -400,6 +427,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "aioreactive", specifier = ">=0.20.0" },
     { name = "ccxt", specifier = ">=4.4.65" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.115.7" },
     { name = "ibis-framework", extras = ["clickhouse", "duckdb", "polars"], specifier = ">=10.4.0" },
@@ -1288,6 +1316,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/d2/14/268ee49bbecc3f72e225addeac7f0e2bd5808747b78c7bf7f87ed9f9d5a8/pyzmq-26.2.1-cp313-cp313t-musllinux_1_1_aarch64.whl", hash = "sha256:632a09c6d8af17b678d84df442e9c3ad8e4949c109e48a72f805b22506c4afa7", size = 1191612 },
     { url = "https://files.pythonhosted.org/packages/5e/02/6394498620b1b4349b95c534f3ebc3aef95f39afbdced5ed7ee315c49c14/pyzmq-26.2.1-cp313-cp313t-musllinux_1_1_i686.whl", hash = "sha256:fc409c18884eaf9ddde516d53af4f2db64a8bc7d81b1a0c274b8aa4e929958e8", size = 1500824 },
     { url = "https://files.pythonhosted.org/packages/17/fc/b79f0b72891cbb9917698add0fede71dfb64e83fa3481a02ed0e78c34be7/pyzmq-26.2.1-cp313-cp313t-musllinux_1_1_x86_64.whl", hash = "sha256:17f88622b848805d3f6427ce1ad5a2aa3cf61f12a97e684dab2979802024d460", size = 1399943 },
+]
+
+[[package]]
+name = "reactivex"
+version = "4.0.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ef/63/f776322df4d7b456446eff78c4e64f14c3c26d57d46b4e06c18807d5d99c/reactivex-4.0.4.tar.gz", hash = "sha256:e912e6591022ab9176df8348a653fe8c8fa7a301f26f9931c9d8c78a650e04e8", size = 119177 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/69/3f/2ed8c1b8fe3fc2ed816ba40554ef703aad8c51700e2606c139fcf9b7f791/reactivex-4.0.4-py3-none-any.whl", hash = "sha256:0004796c420bd9e68aad8e65627d85a8e13f293de76656165dffbcb3a0e3fb6a", size = 217791 },
 ]
 
 [[package]]

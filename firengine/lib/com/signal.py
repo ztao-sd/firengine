@@ -1,5 +1,6 @@
 import asyncio
 from collections.abc import Awaitable, Callable
+from datetime import datetime
 
 
 class Signal[T]:
@@ -22,6 +23,7 @@ class AsyncSignal[T]:
         self._handlers: list[Callable[[T], Awaitable]] = []
 
     async def emit(self, value: T):
+        print(datetime.now(), value)
         async with asyncio.TaskGroup() as tg:
             for handler in self._handlers:
                 tg.create_task(handler(value))

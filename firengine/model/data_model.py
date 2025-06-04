@@ -53,7 +53,7 @@ class TradeAbridged:
     symbol: str | None = None
 
 
-@dataclass
+@dataclass(frozen=True)
 class OHLCV:
     timestamp: int
     open: float

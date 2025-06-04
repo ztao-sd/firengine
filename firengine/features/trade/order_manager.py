@@ -1,4 +1,5 @@
 from collections import defaultdict
+from datetime import datetime
 
 import ccxt.pro as ccxt
 
@@ -30,6 +31,9 @@ class OrderManager:
 
     def get_closed_order(self, symbol: str, order_id: str) -> Order | None:
         return self._closed_orders_per_symbol[symbol].get(order_id)
+
+    def get_order(self, symbol: str, order_id: str) -> Order | None:
+        return self.get_open_order(symbol, order_id) or self.get_closed_order(symbol, order_id)
 
     def get_open_orders_per_symbol(self, symbol: str) -> dict[str, Order]:
         return self._open_orders_per_symbol[symbol]
