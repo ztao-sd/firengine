@@ -411,6 +411,7 @@ dependencies = [
     { name = "polars" },
     { name = "pydantic-settings" },
     { name = "pyiceberg" },
+    { name = "pyrsistent" },
     { name = "pyzmq" },
     { name = "rich" },
     { name = "shortuuid" },
@@ -438,6 +439,7 @@ requires-dist = [
     { name = "polars", specifier = ">=1.26.0" },
     { name = "pydantic-settings", specifier = ">=2.7.1" },
     { name = "pyiceberg", specifier = ">=0.9.0" },
+    { name = "pyrsistent", specifier = ">=0.20.0" },
     { name = "pyzmq", specifier = ">=26.2.1" },
     { name = "rich", specifier = ">=13.9.4" },
     { name = "shortuuid", specifier = ">=1.0.13" },
@@ -1192,6 +1194,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/bb/22/f1129e69d94ffff626bdb5c835506b3a5b4f3d070f17ea295e12c2c6f60f/pyparsing-3.2.3.tar.gz", hash = "sha256:b9c13f1ab8b3b542f72e28f634bad4de758ab3ce4546e4301970ad6fa77c38be", size = 1088608 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/05/e7/df2285f3d08fee213f2d041540fa4fc9ca6c2d44cf36d3a035bf2a8d2bcc/pyparsing-3.2.3-py3-none-any.whl", hash = "sha256:a749938e02d6fd0b59b356ca504a24982314bb090c383e3cf201c95ef7e2bfcf", size = 111120 },
+]
+
+[[package]]
+name = "pyrsistent"
+version = "0.20.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ce/3a/5031723c09068e9c8c2f0bc25c3a9245f2b1d1aea8396c787a408f2b95ca/pyrsistent-0.20.0.tar.gz", hash = "sha256:4c48f78f62ab596c679086084d0dd13254ae4f3d6c72a83ffdf5ebdef8f265a4", size = 103642 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/23/88/0acd180010aaed4987c85700b7cc17f9505f3edb4e5873e4dc67f613e338/pyrsistent-0.20.0-py3-none-any.whl", hash = "sha256:c55acc4733aad6560a7f5f818466631f07efc001fd023f34a6c203f8b6df0f0b", size = 58106 },
 ]
 
 [[package]]

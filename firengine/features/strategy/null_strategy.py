@@ -1,14 +1,9 @@
 import asyncio
 
 
-class NullStrategy:
-
-    def __init__(self):
-        pass
-
-
-async def main():
+async def null_strategy():
     pass
 
-if __name__ == '__main__':
-    asyncio.run(main())
+
+if __name__ == "__main__":
+    asyncio.run(null_strategy())

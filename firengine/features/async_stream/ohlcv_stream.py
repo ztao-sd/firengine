@@ -1,14 +1,14 @@
 import asyncio
 import time
-import traceback
 from collections.abc import AsyncGenerator, AsyncIterable
 from typing import TYPE_CHECKING, Optional, Union
 
 import polars as pl
-from aioreactive import AsyncObserver, AsyncSubject, filter
+from aioreactive import AsyncObserver, filter
 from expression import pipe
 from expression.system import AsyncDisposable
 
+from firengine.features.async_stream.base_stream import BaseStream
 from firengine.lib.common_type import StrPath
 from firengine.model.data_model import OHLCV
 
@@ -34,28 +34,6 @@ def load_dataframe_from_ohlcvt_csvfiles(
 async def generate_ohlcvt_from_df(ohlcvt_df: pl.DataFrame) -> AsyncGenerator[OHLCV]:
     for f in ohlcvt_df.iter_rows():
         yield OHLCV(*f)
-
-
-class BaseStream[T](AsyncSubject):
-    def __init__(self, async_iter: AsyncIterable[T]):
-        super().__init__()
-        self._async_iter = async_iter
-        self._streaming = False
-
-    async def async_run(self):
-        self._streaming = True
-        async_iter = aiter(self._async_iter)
-        while self._streaming:
-            try:
-                obj = await anext(async_iter)
-                await self.asend(obj)
-            except StopAsyncIteration as err:
-                self._streaming = False
-                print("stop", err)
-                traceback.print_exc()
-            except Exception as err:
-                print(err)
-                traceback.print_exc()
 
 
 class BacktestOHLCVStream(BaseStream):
