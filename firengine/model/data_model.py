@@ -1,7 +1,7 @@
 from dataclasses import dataclass, fields
 from typing import Self
 
-from firengine.lib.enumeration import OrderStatus
+from firengine.lib.enumeration import OrderStatus, OrderType, TimeInForce, TradeSide
 
 
 class FromDictMixin:
@@ -94,17 +94,26 @@ class PrivateTrade(FromDictMixin):
 
 
 @dataclass
+class OrderRequest(FromDictMixin):
+    symbol: str
+    type: str
+    side: str
+    amount: float
+    price: float
+
+
+@dataclass
 class Order(FromDictMixin):
     id: str
     clientOrderId: str
     datetime: str
     timestamp: int
     lastTradeTimestamp: int
-    status: str
+    status: OrderStatus
     symbol: str
-    type: str
-    timeInForce: str
-    side: str
+    type: OrderType
+    timeInForce: TimeInForce
+    side: TradeSide
     price: float
     average: float
     amount: float

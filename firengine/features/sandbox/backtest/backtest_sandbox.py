@@ -1,13 +1,12 @@
 import asyncio
-import random
-from collections import deque, defaultdict
 from collections.abc import AsyncGenerator
 
 import polars as pl
-import shortuuid
+from aioreactive.testing import VirtualTimeEventLoop
 
 from firengine.config import KRAKEN_OHLCVT_DATA_DIR, SECONDS_PER_YEAR
 from firengine.features.async_stream.base_stream import BaseStream
+from firengine.features.sandbox.backtest.backtest_trader import BacktestTrader
 from firengine.lib.common_type import StrPath
 from firengine.model.data_model import OHLCV, Order, Trade
 from firengine.utils.timeutil import time_ms
@@ -30,9 +29,13 @@ def load_dataframe_from_ohlcvt_csvfiles(
     return ohlcvt.sort("timestamp").collect()
 
 
-async def generate_ohlcvt_from_df(ohlcvt_df: pl.DataFrame, speedup: int = 1) -> AsyncGenerator[OHLCV]:
+async def generate_ohlcvt_from_df(ohlcvt_df: pl.DataFrame, speedup: int = 1, limit: int = float("inf")) -> AsyncGenerator[OHLCV]:
     prev_time: int | None = None
+    count = 0
     for f in ohlcvt_df.iter_rows():
+        if count > limit:
+            break
+        count += 1
         ohlcv = OHLCV(*f)
         if prev_time is None:
             prev_time = ohlcv.timestamp
@@ -42,15 +45,7 @@ async def generate_ohlcvt_from_df(ohlcvt_df: pl.DataFrame, speedup: int = 1) -> 
         yield ohlcv
 
 
-async def handle_order(order: Order, orders: defaultdict[str, dict[str, Order]]):
-    pass
-
 async def main():
-    # State
-    ohlcv_queue: deque[OHLCV] = deque(maxlen=1_000)
-    orders: dict[str, Order] = {}
-    order_index = None
-
     # Backtest data
     speedup = 60
     symbols = ("XBTUSD",)
@@ -58,48 +53,33 @@ async def main():
     end = time_ms()
     start = end - 2 * SECONDS_PER_YEAR * 1000
     df = load_dataframe_from_ohlcvt_csvfiles(files, start, end)
-    ohlcv_gen = generate_ohlcvt_from_df(df, speedup)
+    ohlcv_gen = generate_ohlcvt_from_df(df, speedup, limit=1000)
 
     # Streams
     ohlcv_stream = BaseStream[OHLCV](ohlcv_gen)
     order_stream = BaseStream[Order]()
     trade_stream = BaseStream[Trade]()
 
+    # Engine
+    trader = BacktestTrader(order_stream)
+
     async def print_data(data):
-        print("Consumed: ", data)
-
-    # Agent actions
-
-
-
-
-    async def save_ohlcv(ohlcv: OHLCV):
-        ohlcv_queue.append(ohlcv)
-
-    async def random_strategy(ohlcv: OHLCV):
-        buy_sell = random.randint(0, 1)
-        if buy_sell:
-            await submit_order(
-                ohlcv.symbol,
-                "market",
-                "buy",
-                0.01,
-                ohlcv.low,
-            )
-        else:
-            pass
+        pass
 
     await ohlcv_stream.subscribe_async(print_data)
-    await ohlcv_stream.subscribe_async(save_ohlcv)
-    await ohlcv_stream.subscribe_async(random_strategy)
+    await ohlcv_stream.subscribe_async(trader.handle_ohlcv)
+    await ohlcv_stream.subscribe_async(trader.match_open_order)
 
     await order_stream.subscribe_async(print_data)
+    await order_stream.subscribe_async(trader.handle_order)
+
     await trade_stream.subscribe_async(print_data)
+    await trade_stream.subscribe_async(trader.handle_trade)
 
     await ohlcv_stream.async_run()
 
 
 if __name__ == "__main__":
-    loop_factory = None
+    loop_factory = VirtualTimeEventLoop
 
     asyncio.run(main(), loop_factory=loop_factory)
