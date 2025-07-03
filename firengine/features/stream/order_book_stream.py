@@ -2,7 +2,7 @@ import asyncio
 from collections.abc import AsyncGenerator
 
 from firengine.features.stream.base_stream import BaseExchangeStream
-from firengine.lib.enumeration import SupportedExchange
+from firengine.lib.fire_enum import SupportedExchange
 from firengine.model.data_model import OrderBook
 
 

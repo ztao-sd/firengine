@@ -19,7 +19,7 @@ class TradeStream(BaseExchangeStream[Trade]):
 
 async def main():
     from firengine.features.data_handler import PrintDataHandler
-    from firengine.lib.enumeration import SupportedExchange
+    from firengine.lib.fire_enum import SupportedExchange
 
     handler = PrintDataHandler[Trade]()
     stream = TradeStream.from_supported_exchange(SupportedExchange.cryptocom)

@@ -8,7 +8,7 @@ import ccxt.pro as ccxt
 from ccxt.pro import Exchange
 
 from firengine.lib.com.signal import AsyncSignal
-from firengine.lib.enumeration import SupportedExchange
+from firengine.lib.fire_enum import SupportedExchange
 
 
 class AbstractBaseStream[T](ABC):

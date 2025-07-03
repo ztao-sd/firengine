@@ -1,7 +1,7 @@
 from dataclasses import dataclass, fields
 from typing import Self
 
-from firengine.lib.enumeration import OrderStatus, OrderType, TimeInForce, TradeSide
+from firengine.lib.fire_enum import OrderStatus, OrderType, TimeInForce, TradeSide
 
 
 class FromDictMixin:

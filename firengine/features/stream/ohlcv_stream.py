@@ -158,7 +158,7 @@ class RemoteOHLCVStream(BaseExchangeStream[OHLCV]):
 async def demo_local_ohlcv_stream():
     from firengine.features.data_handler import PrintDataHandler
     from firengine.features.stream.trade_stream import TradeStream
-    from firengine.lib.enumeration import SupportedExchange
+    from firengine.lib.fire_enum import SupportedExchange
 
     trade_stream = TradeStream.from_supported_exchange(SupportedExchange.cryptocom)
     ohlcv_stream = LocalOHLCVStream.from_supported_exchange(
@@ -181,7 +181,7 @@ async def demo_local_ohlcv_stream():
 
 
 async def demo_remote_ohlcv_stream():
-    from firengine.lib.enumeration import SupportedExchange
+    from firengine.lib.fire_enum import SupportedExchange
 
     ohlcv_stream = RemoteOHLCVStream.from_supported_exchange(
         SupportedExchange.cryptocom,

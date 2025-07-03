@@ -1,0 +1,76 @@
+name: firengine_o11y
+services:
+  timescale:
+    image: timescale/timescaledb-ha:pg17
+    container_name: timescale
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: 12345
+    volumes:
+      - postgres_storage:/home/postgres/pgdata/data
+      - ./initdb:/docker-entrypoint-initdb.d/
+
+  loki:
+    image: grafana/loki:${GRAFANA_LOKI_VERSION:-3.5.0}
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml
+      - loki_storage:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+
+
+  prometheus:
+    image: prom/prometheus:${PROMETHEUS_VERSION:-v3.3.0}
+    command:
+      - --web.enable-remote-write-receiver
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prom-config.yaml:/etc/prometheus/prometheus.yml
+
+  alloy:
+    image: grafana/alloy:latest
+    ports:
+      - "12345:12345"
+    volumes:
+      - ./config.alloy:/etc/alloy/config.alloy
+      - ~/firengine_data/log:/var/firengine_data/log
+      - alloy_storage:/var/lib/alloy/data
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    depends_on:
+      - timescale
+      - loki
+      - prometheus
+
+  grafana:
+    image: grafana/grafana-enterprise
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+    volumes:
+      - ./ds.yaml:/etc/grafana/provisioning/datasources/ds.yaml
+      - "grafana_storage:/var/lib/grafana"
+    depends_on:
+      - timescale
+      - loki
+      - prometheus
+
+
+
+volumes:
+  postgres_storage: { }
+  loki_storage: { }
+  prometheus_storage: { }
+  alloy_storage: { }
+  grafana_storage: { }

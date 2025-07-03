@@ -1,0 +1,55 @@
+apiVersion: 1
+datasources:
+  - name: Postgres
+    type: postgres
+    access: proxy
+    orgId: 1
+    url: timescale:5432
+    user: grafanareader
+    isDefault: true
+    secureJsonData:
+      password: "12345"
+    jsonData:
+      database: firengine
+      sslmode: "disable" # disable/require/verify-ca/verify-full
+      maxOpenConns: 100
+      maxIdleConns: 100
+      maxIdleConnsAuto: true
+      connMaxLifetime: 14400
+      postgresVersion: 1500 # 903=9.3, 904=9.4, 905=9.5, 906=9.6, 1000=10
+      timescaledb: true
+  - name: Loki
+    type: loki
+    access: proxy
+    orgId: 1
+    url: http://loki:3100
+    basicAuth: false
+    isDefault: false
+    version: 1
+    editable: false
+  - name: Prometheus
+    type: prometheus
+    orgId: 1
+    url: http://prometheus:9090
+    basicAuth: false
+    isDefault: false
+    version: 1
+    editable: false
+  - name: Chinook
+    type: postgres
+    access: proxy
+    orgId: 1
+    url: timescale:5432
+    user: postgres
+    isDefault: false
+    secureJsonData:
+      password: "12345"
+    jsonData:
+      database: chinook
+      sslmode: "disable" # disable/require/verify-ca/verify-full
+      maxOpenConns: 100
+      maxIdleConns: 100
+      maxIdleConnsAuto: true
+      connMaxLifetime: 14400
+      postgresVersion: 1500 # 903=9.3, 904=9.4, 905=9.5, 906=9.6, 1000=10
+      timescaledb: true

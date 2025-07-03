@@ -37,6 +37,20 @@ class TimeInForce(StrEnum):
     fill_or_kill = "FOK"
     post_only = "PO"
 
+
 class TakerOrMaker(StrEnum):
     taker = auto()
     maker = auto()
+
+
+class EventType(StrEnum):
+    start_run = auto()
+    end_run = auto()
+    collect_ohlcv = auto()
+    submit_order = auto()
+    modify_order = auto()
+    cancel_order = auto()
+    fill_order = auto()
+
+class Currency(StrEnum):
+    pass

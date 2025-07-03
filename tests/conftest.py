@@ -12,7 +12,7 @@ from firengine.features.stream.order_stream import OrderStream
 from firengine.features.stream.private_trade_stream import PrivateTradeStream
 from firengine.features.trade.order_manager import OrderManager
 from firengine.features.trade.otoco import OTOCOManager
-from firengine.lib.enumeration import SupportedExchange
+from firengine.lib.fire_enum import SupportedExchange
 
 
 @pytest.fixture(scope="session")

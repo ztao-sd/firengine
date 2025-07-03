@@ -1,17 +1,74 @@
 import asyncio
+import logging
 from collections.abc import AsyncGenerator
+from datetime import UTC, datetime
 
+import nats
 import polars as pl
+import shortuuid
 from aioreactive.testing import VirtualTimeEventLoop
+from pythonjsonlogger.orjson import OrjsonFormatter
 
-from firengine.config import KRAKEN_OHLCVT_DATA_DIR, SECONDS_PER_YEAR
+from firengine.config import KRAKEN_OHLCVT_DATA_DIR, LOG_DIR, SECONDS_PER_YEAR
 from firengine.features.async_stream.base_stream import BaseStream
-from firengine.features.sandbox.backtest.backtest_trader import BacktestTrader
+from firengine.features.sandbox.backtest.backtest_trader import BacktestEngine
 from firengine.lib.common_type import StrPath
 from firengine.model.data_model import OHLCV, Order, Trade
 from firengine.utils.timeutil import time_ms
 
 OHLCVT_COLUMNS = ("timestamp", "open", "high", "low", "close", "volume", "trades")
+
+
+class NATSLogEventHandler(logging.Handler):
+    def __init__(self, url: str):
+        super().__init__()
+        self._url = url
+        self._nc = nats.NATS()
+        self._loop = asyncio.get_running_loop()
+        self._loop.run_until_complete(self._nc.connect(self._url))
+
+    def emit(self, record: logging.LogRecord):
+        try:
+            if isinstance(record.msg, dict):
+                strategy_name = record.msg.get("strategy_name")
+                run_id = record.msg.get("run_id")
+                if strategy_name and run_id:
+                    subject = f"fire.{strategy_name}.{run_id}"
+                    message = self.format(record)
+                    self._loop.create_task(self._nc.publish(subject, message.encode()))
+        except Exception as err:
+            print(err)
+            self.handleError(record)
+
+
+def setup_standard_structured_logging(
+    level: int, filename: StrPath | None = None, nats_url: str | None = None, verbose: bool = False
+):
+    logger = logging.getLogger()
+    logger.setLevel(level)
+
+    formatter = OrjsonFormatter("%(timestamp) %(levelname)s %(message)s", timestamp=True)
+
+    # Stream handler
+    if verbose:
+        handler = logging.StreamHandler()
+        handler.setFormatter(formatter)
+        handler.setLevel(level)
+        logger.addHandler(handler)
+
+    # File handler
+    if filename is not None:
+        handler = logging.FileHandler(filename)
+        handler.setFormatter(formatter)
+        handler.setLevel(level)
+        logger.addHandler(handler)
+
+    # Nats handler
+    if nats_url:
+        handler = NATSLogEventHandler(nats_url)
+        handler.setFormatter(formatter)
+        handler.setLevel(level)
+        logger.addHandler(handler)
 
 
 def load_dataframe_from_ohlcvt_csvfiles(
@@ -29,7 +86,9 @@ def load_dataframe_from_ohlcvt_csvfiles(
     return ohlcvt.sort("timestamp").collect()
 
 
-async def generate_ohlcvt_from_df(ohlcvt_df: pl.DataFrame, speedup: int = 1, limit: int = float("inf")) -> AsyncGenerator[OHLCV]:
+async def generate_ohlcvt_from_df(
+    ohlcvt_df: pl.DataFrame, speedup: int = 1, limit: int = float("inf")
+) -> AsyncGenerator[OHLCV]:
     prev_time: int | None = None
     count = 0
     for f in ohlcvt_df.iter_rows():
@@ -46,6 +105,14 @@ async def generate_ohlcvt_from_df(ohlcvt_df: pl.DataFrame, speedup: int = 1, lim
 
 
 async def main():
+    # Config data
+    log_level = logging.INFO
+    log_verbose = True
+    strategy_name = "backtest"
+    start_dt = datetime.now(UTC)
+    logfile = LOG_DIR / f"{strategy_name}_{start_dt.isoformat()}_{shortuuid.uuid()}.log"
+    setup_standard_structured_logging(log_level, logfile, verbose=log_verbose)
+
     # Backtest data
     speedup = 60
     symbols = ("XBTUSD",)
@@ -61,7 +128,7 @@ async def main():
     trade_stream = BaseStream[Trade]()
 
     # Engine
-    trader = BacktestTrader(order_stream)
+    trader = BacktestEngine(order_stream)
 
     async def print_data(data):
         pass

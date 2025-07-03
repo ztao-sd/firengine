@@ -3,7 +3,7 @@ import sys
 
 import ccxt.pro as ccxt
 
-from firengine.lib.enumeration import SupportedExchange
+from firengine.lib.fire_enum import SupportedExchange
 from firengine.lib.model.common import CommonModel
 
 if sys.platform == "win32":

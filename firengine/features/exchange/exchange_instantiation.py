@@ -1,7 +1,7 @@
 import ccxt
 import ccxt.pro as ccxt_pro
 
-from firengine.lib.enumeration import SupportedExchange
+from firengine.lib.fire_enum import SupportedExchange
 from firengine.utils.credential import get_user_password_keyring
 
 

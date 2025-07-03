@@ -1,14 +1,53 @@
+import logging
 from collections import defaultdict, deque
-from dataclasses import replace
+from dataclasses import asdict, replace
 from random import randint
 
 import ccxt
 import shortuuid
 
 from firengine.features.async_stream.base_stream import BaseStream
-from firengine.lib.enumeration import OrderStatus, OrderType, TakerOrMaker, TimeInForce, TradeSide
-from firengine.lib.logger.debug_logger import debug
+from firengine.lib.fire_enum import (
+    OrderStatus,
+    OrderType,
+    TakerOrMaker,
+    TimeInForce,
+    TradeSide,
+)
 from firengine.model.data_model import OHLCV, Order, PrivateTrade
+
+logger = logging.getLogger(__name__)
+
+
+def log_base_event(msg: str, timestamp: float, strategy_name: str, run_id: str, details: dict | None = None):
+    log_entry = {
+        "message": msg,
+        "timestamp": timestamp,
+        "strategy_name": strategy_name,
+        "run_id": run_id,
+        "details": details or {},
+    }
+    logger.info(log_entry)
+
+
+def log_start_run(timestamp: float, strategy_name: str, run_id: str, available_funds: dict):
+    log_base_event("Run Start", timestamp, strategy_name, run_id, available_funds)
+
+
+def log_end_run(timestamp: float, strategy_name: str, run_id: str, available_funds: dict):
+    log_base_event("Run End", timestamp, strategy_name, run_id, available_funds)
+
+
+def log_collect_ohlcv(timestamp: float, strategy_name: str, run_id: str, ohlcv: OHLCV):
+    log_base_event("Run End", timestamp, strategy_name, run_id, asdict(ohlcv))
+
+
+def log_submit_order(timestamp: float, strategy_name: str, run_id: str, order: Order):
+    log_base_event("Run End", timestamp, strategy_name, run_id, asdict(order))
+
+
+def log_fill_order(timestamp: float, strategy_name: str, run_id: str, trade: PrivateTrade):
+    log_base_event("Run End", timestamp, strategy_name, run_id, asdict(trade))
 
 
 def create_mock_open_order(
@@ -41,11 +80,16 @@ def create_mock_open_order(
     )
 
 
-class BacktestTrader:
+class BacktestEngine:
     def __init__(self, order_stream: BaseStream[Order]):
+        # Dependency
         self._order_stream = order_stream
+        self._strategy_name = "BacktestSandboxStrategy"
 
         # State
+        self._run_id = shortuuid.uuid()
+        self._available_funds = {}
+        self._stake_currencies = {}
         self._ohlcv_queues: defaultdict[str, deque[OHLCV]] = defaultdict(lambda: deque(maxlen=1_000))
         self._orders: defaultdict[str, dict[str, Order]] = defaultdict(dict)
         self._open_orders: defaultdict[str, dict[str, Order]] = defaultdict(dict)
@@ -64,7 +108,6 @@ class BacktestTrader:
     ):
         timestamp = self._ohlcv_queues[symbol][-1].timestamp
         order = create_mock_open_order(timestamp, symbol, order_type, side, amount, price)
-        debug(f"Submit {order}")
         await self._order_stream.asend(order)
 
     async def modify_order(
@@ -84,9 +127,12 @@ class BacktestTrader:
         self._orders[order.symbol][order.id] = order
         match order.status:
             case OrderStatus.open:
+                if order.id in self._open_orders[order.symbol]:
+                    pass
+                else:
+                    log_submit_order(order.timestamp, self._strategy_name, self._run_id, order)
                 self._open_orders[order.symbol][order.id] = order
             case OrderStatus.close:
-                debug(f"Close {order}")
                 self._open_orders[order.symbol].pop(order.id, None)
                 self._close_orders[order.symbol][order.id] = order
             case _:
@@ -94,7 +140,7 @@ class BacktestTrader:
                 self._canceled_orders[order.symbol][order.id] = order
 
     async def handle_trade(self, trade: PrivateTrade):
-        debug(f"Fill {trade}")
+        log_fill_order(trade.timestamp, self._strategy_name, self._run_id, trade)
         self._trades[trade.symbol][trade.id] = trade
 
     async def match_open_order(self, ohlcv: OHLCV):
@@ -158,7 +204,6 @@ class BacktestTrader:
                     )
 
     async def handle_ohlcv(self, ohlcv: OHLCV):
-        debug(f"Received {ohlcv}")
         self._ohlcv_queues[ohlcv.symbol].append(ohlcv)
         buy_or_sell = randint(0, 1)
         if True:

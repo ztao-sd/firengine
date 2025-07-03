@@ -1,0 +1,69 @@
+livedebugging {
+  enabled = true
+}
+
+logging {
+  level  = "info"
+  format = "logfmt"
+  write_to = [loki.write.local.receiver]
+}
+
+prometheus.exporter.self "prometheus_self_exporter" {
+}
+
+prometheus.scrape "prometheus_self_exporter" {
+  targets = prometheus.exporter.self.prometheus_self_exporter.targets
+  forward_to = [prometheus.remote_write.local.receiver]
+}
+
+prometheus.remote_write "local" {
+  endpoint {
+  // Send metrics to a locally running Prometheus instance
+  url = "http://prometheus:9090/api/v1/write"
+  }
+}
+
+local.file_match "logfiles" {
+  path_targets = [{"__path__" = "/var/firengine_data/log/*.log"}]
+  sync_period = "2s"
+}
+
+
+loki.source.file "logfiles" {
+  targets = local.file_match.logfiles.targets
+  forward_to = [loki.process.loglabels.receiver]
+}
+
+loki.process "loglabels" {
+  stage.json {
+    expressions = {
+      "timestamp" = "",
+      "level" = "",
+      "message" = "",
+      "trader_action" = "",
+      "exchange_action" = "",
+    }
+  }
+  stage.labels {
+    values = {
+      "trader_action" = "",
+      "exchange_action" = "",
+    }
+  }
+  stage.static_labels {
+    values = {
+      "service" = "firengine",
+    }
+  }
+
+  forward_to = [loki.write.local.receiver]
+}
+
+// Define where to send logs for storage
+loki.write "local" {
+  endpoint {
+    // Send logs to a locally running Loki instance
+    url ="http://loki:3100/loki/api/v1/push"
+  }
+}
+

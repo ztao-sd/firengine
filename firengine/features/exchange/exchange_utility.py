@@ -5,7 +5,7 @@ from typing import Self
 import ccxt
 from ccxt import Exchange
 
-from firengine.lib.enumeration import SupportedExchange
+from firengine.lib.fire_enum import SupportedExchange
 from firengine.model.data_model import Ticker
 
 
